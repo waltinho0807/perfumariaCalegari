@@ -295,4 +295,28 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+let _storage: IStorage | null = null;
+
+export function getStorage(): IStorage {
+  if (!_storage) {
+    throw new Error("Storage not initialized. Call initStorage() first.");
+  }
+  return _storage;
+}
+
+export async function initStorage(): Promise<void> {
+  if (process.env.DATABASE_URL) {
+    const { DbStorage } = await import("./dbStorage");
+    _storage = new DbStorage();
+    console.log("Using database storage (Supabase)");
+  } else {
+    _storage = new MemStorage();
+    console.log("Using in-memory storage");
+  }
+}
+
+export const storage = new Proxy({} as IStorage, {
+  get(_target, prop) {
+    return (getStorage() as any)[prop];
+  }
+});
