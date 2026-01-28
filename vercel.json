@@ -2,12 +2,14 @@
   "buildCommand": "npx vite build --config vite.config.vercel.ts",
   "outputDirectory": "dist/public",
   "framework": null,
+  "installCommand": "npm install",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" }
   ],
   "functions": {
     "api/index.ts": {
-      "runtime": "@vercel/node@3.0.0"
+      "runtime": "@vercel/node@3.0.0",
+      "maxDuration": 30
     }
   }
 }
