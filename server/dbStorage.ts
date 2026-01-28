@@ -1,5 +1,5 @@
 import { eq, desc, and } from "drizzle-orm";
-import { db } from "./db";
+import { getDb } from "./db";
 import { 
   users, products, leads, viewedProducts, blogPosts,
   type User, type InsertUser, 
@@ -11,32 +11,36 @@ import {
 import type { IStorage } from "./storage";
 
 export class DbStorage implements IStorage {
+  private get db() {
+    return getDb();
+  }
+
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await this.db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await this.db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const [user] = await this.db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getAllProducts(): Promise<Product[]> {
-    return db.select().from(products);
+    return this.db.select().from(products);
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
+    const [product] = await this.db.select().from(products).where(eq(products.id, id));
     return product;
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const [product] = await db.insert(products).values({
+    const [product] = await this.db.insert(products).values({
       name: insertProduct.name,
       brand: insertProduct.brand,
       price: insertProduct.price,
@@ -51,7 +55,7 @@ export class DbStorage implements IStorage {
   }
 
   async updateProduct(id: number, updates: Partial<InsertProduct>): Promise<Product | undefined> {
-    const [product] = await db.update(products)
+    const [product] = await this.db.update(products)
       .set(updates)
       .where(eq(products.id, id))
       .returning();
@@ -59,26 +63,26 @@ export class DbStorage implements IStorage {
   }
 
   async deleteProduct(id: number): Promise<boolean> {
-    const result = await db.delete(products).where(eq(products.id, id));
+    const result = await this.db.delete(products).where(eq(products.id, id));
     return true;
   }
 
   async getAllLeads(): Promise<Lead[]> {
-    return db.select().from(leads);
+    return this.db.select().from(leads);
   }
 
   async getLead(id: number): Promise<Lead | undefined> {
-    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    const [lead] = await this.db.select().from(leads).where(eq(leads.id, id));
     return lead;
   }
 
   async getLeadByPhone(phone: string): Promise<Lead | undefined> {
-    const [lead] = await db.select().from(leads).where(eq(leads.phone, phone));
+    const [lead] = await this.db.select().from(leads).where(eq(leads.phone, phone));
     return lead;
   }
 
   async createLead(insertLead: InsertLead): Promise<Lead> {
-    const [lead] = await db.insert(leads).values({
+    const [lead] = await this.db.insert(leads).values({
       name: insertLead.name,
       phone: insertLead.phone,
     }).returning();
@@ -86,7 +90,7 @@ export class DbStorage implements IStorage {
   }
 
   async getViewedProducts(leadId: number): Promise<Product[]> {
-    const viewed = await db.select({ productId: viewedProducts.productId })
+    const viewed = await this.db.select({ productId: viewedProducts.productId })
       .from(viewedProducts)
       .where(eq(viewedProducts.leadId, leadId));
     
@@ -97,14 +101,14 @@ export class DbStorage implements IStorage {
     
     const result: Product[] = [];
     for (const id of productIds) {
-      const [product] = await db.select().from(products).where(eq(products.id, id));
+      const [product] = await this.db.select().from(products).where(eq(products.id, id));
       if (product) result.push(product);
     }
     return result;
   }
 
   async addViewedProduct(insertViewedProduct: InsertViewedProduct): Promise<ViewedProduct> {
-    const existing = await db.select()
+    const existing = await this.db.select()
       .from(viewedProducts)
       .where(and(
         eq(viewedProducts.leadId, insertViewedProduct.leadId!),
@@ -113,7 +117,7 @@ export class DbStorage implements IStorage {
     
     if (existing.length > 0) return existing[0];
 
-    const [vp] = await db.insert(viewedProducts).values({
+    const [vp] = await this.db.insert(viewedProducts).values({
       leadId: insertViewedProduct.leadId,
       productId: insertViewedProduct.productId,
     }).returning();
@@ -121,7 +125,7 @@ export class DbStorage implements IStorage {
   }
 
   async removeViewedProduct(leadId: number, productId: number): Promise<boolean> {
-    await db.delete(viewedProducts)
+    await this.db.delete(viewedProducts)
       .where(and(
         eq(viewedProducts.leadId, leadId),
         eq(viewedProducts.productId, productId)
@@ -130,16 +134,16 @@ export class DbStorage implements IStorage {
   }
 
   async getAllBlogPosts(): Promise<BlogPost[]> {
-    return db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+    return this.db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
   }
 
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
-    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    const [post] = await this.db.select().from(blogPosts).where(eq(blogPosts.id, id));
     return post;
   }
 
   async createBlogPost(insertPost: InsertBlogPost): Promise<BlogPost> {
-    const [post] = await db.insert(blogPosts).values({
+    const [post] = await this.db.insert(blogPosts).values({
       title: insertPost.title,
       excerpt: insertPost.excerpt,
       content: insertPost.content,
@@ -150,7 +154,7 @@ export class DbStorage implements IStorage {
   }
 
   async deleteBlogPost(id: number): Promise<boolean> {
-    await db.delete(blogPosts).where(eq(blogPosts.id, id));
+    await this.db.delete(blogPosts).where(eq(blogPosts.id, id));
     return true;
   }
 }
