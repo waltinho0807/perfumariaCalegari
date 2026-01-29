@@ -43,9 +43,10 @@ export default function Admin() {
     queryKey: ["/api/products"],
   });
 
-  const { data: posts = [], isLoading: loadingPosts } = useQuery<BlogPost[]>({
+  const { data: blogData, isLoading: loadingPosts } = useQuery<{ posts: BlogPost[]; total: number }>({
     queryKey: ["/api/blog"],
   });
+  const posts = blogData?.posts ?? [];
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
