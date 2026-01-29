@@ -23,7 +23,7 @@ export async function registerRoutes(
   app.get("/api/products/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const product = await storage.getProduct(id);
+      const product = await storage.getProductById(id);
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
@@ -114,8 +114,8 @@ export async function registerRoutes(
   app.get("/api/viewed-products/:leadId", async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
-      const products = await storage.getViewedProducts(leadId);
-      res.json(products);
+      const viewed = await storage.getViewedProductsByLead(leadId);
+      res.json(viewed);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch viewed products" });
     }
@@ -149,10 +149,12 @@ export async function registerRoutes(
   });
 
   // Blog posts routes
-  app.get("/api/blog", async (_req, res) => {
+  app.get("/api/blog", async (req, res) => {
     try {
-      const posts = await storage.getAllBlogPosts();
-      res.json(posts);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 6;
+      const result = await storage.getAllBlogPosts(page, limit);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch blog posts" });
     }
@@ -161,7 +163,7 @@ export async function registerRoutes(
   app.get("/api/blog/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const post = await storage.getBlogPost(id);
+      const post = await storage.getBlogPostById(id);
       if (!post) {
         return res.status(404).json({ message: "Blog post not found" });
       }
